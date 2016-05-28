@@ -8,7 +8,8 @@ uses
   System.Math.Vectors,
   FMX.Controls.Presentation, FMX.StdCtrls, FMX.Viewport3D, FMX.Types3D,
   FMX.MaterialSources, FMX.Objects3D, FMX.Controls3D,
-  LUX.D3, LUX.Brep.Cell.TetraFlip.D3, LUX.Brep.Cell.TetraFlip.D3.Delaunay, LUX.Brep.Cell.TetraFlip.D3.FMX;
+  LUX, LUX.D3, LUX.Brep.Face.TriFlip.D3,
+  LUX.Brep.Cell.TetraFlip.D3, LUX.Brep.Cell.TetraFlip.D3.Delaunay, LUX.Brep.Cell.TetraFlip.D3.FMX;
 
 type
   TForm1 = class(TForm)
@@ -34,6 +35,7 @@ type
     _MouseS :TShiftState;
   public
     { public êÈåæ }
+    _FaceModel  :TTriFaceModel3D;
     _Delaunay3D :TDelaunay3D;
     _DelaEdges  :TDelaEdges;
     _VoroEdges  :TVoroEdges;
@@ -52,20 +54,10 @@ procedure TForm1.FormCreate(Sender: TObject);
 begin
      _MouseS := [];
 
+     _FaceModel := TTriFaceModel3D.Create;
+     _FaceModel.LoadFromFile( '..\..\_DATA\Torus.obj' );
+
      _Delaunay3D := TDelaunay3D.Create;
-
-     with _Delaunay3D do
-     begin
-          AddPoin( TSingle3D.Create( +1, -1, +1 ) );
-          AddPoin( TSingle3D.Create( -1, +1, +1 ) );
-          AddPoin( TSingle3D.Create( +1, +1, -1 ) );
-          AddPoin( TSingle3D.Create( -1, -1, -1 ) );
-
-          AddPoin( TSingle3D.Create( -2, +2, -2 ) );
-          AddPoin( TSingle3D.Create( +2, -2, -2 ) );
-          AddPoin( TSingle3D.Create( +2, +2, +2 ) );
-          AddPoin( TSingle3D.Create( -2, -2, +2 ) );
-     end;
 
      _DelaEdges := TDelaEdges.Create( Self );
      _VoroEdges := TVoroEdges.Create( Self );
@@ -75,7 +67,7 @@ begin
           Parent     := Viewport3D1;
           Material   := LightMaterialSourceD;
           TetraModel := TTetraModel3D( _Delaunay3D );
-          EdgeRadius := 0.05;
+          EdgeRadius := 0.002;
      end;
 
      with _VoroEdges do
@@ -83,17 +75,19 @@ begin
           Parent     := Viewport3D1;
           Material   := LightMaterialSourceV;
           TetraModel := TTetraModel3D( _Delaunay3D );
-          EdgeRadius := 0.05;
-          EdgeLength := 10;
+          EdgeRadius := 0.002;
+          EdgeLength := 0.002;
      end;
 end;
 
 procedure TForm1.FormDestroy(Sender: TObject);
 begin
      _Delaunay3D.Free;
+
+     _FaceModel.Free;
 end;
 
-////////////////////////////////////////////////////////////////////////////////
+//------------------------------------------------------------------------------
 
 procedure TForm1.Viewport3D1MouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Single);
 begin
@@ -123,13 +117,66 @@ begin
      _MouseS := [];
 end;
 
-////////////////////////////////////////////////////////////////////////////////
+//------------------------------------------------------------------------------
+
+function InsideTorus( const P_:TSingle3D ) :Boolean;
+begin
+     Result := ( Pow2( Roo2( Pow2( P_.X ) + Pow2( P_.Y ) ) - 1 ) + Pow2( P_.Z ) < 0.25 );
+end;
 
 procedure TForm1.Button1Click(Sender: TObject);
 var
-   N :Integer;
+   I :Integer;
+   C :TDelaCell;
+   P01, P02, P03,
+   P12, P23, P31 :TSingle3D;
 begin
-     for N := 1 to 10 do _Delaunay3D.AddPoin( 2 * TSingle3D.RandG );
+     _Delaunay3D.DeleteChilds;
+
+     with _FaceModel.PoinModel do
+     begin
+          for I := 0 to ChildsN-1 do _Delaunay3D.AddPoin( Childs[ I ].Pos );
+     end;
+
+     with _Delaunay3D do
+     begin
+          for I := 1 to 10000 do
+          begin
+               C := Childs[ Random( ChildsN ) ];
+
+               with C do
+               begin
+                    with CircumSphere do
+                    begin
+                         if InsideTorus( Center ) and ( Radius > 0.1 )
+                         then AddPoin3( TDelaPoin.Create( Center, PoinModel ), C );
+                    end;
+               end;
+          end;
+
+          for I := ChildsN-1 downto 0 do
+          begin
+               C := Childs[ I ];
+               with C do
+               begin
+                    P01 := Ave( Poin[ 0 ].Pos, Poin[ 1 ].Pos );
+                    P02 := Ave( Poin[ 0 ].Pos, Poin[ 2 ].Pos );
+                    P03 := Ave( Poin[ 0 ].Pos, Poin[ 3 ].Pos );
+                    P12 := Ave( Poin[ 1 ].Pos, Poin[ 2 ].Pos );
+                    P23 := Ave( Poin[ 2 ].Pos, Poin[ 3 ].Pos );
+                    P31 := Ave( Poin[ 3 ].Pos, Poin[ 1 ].Pos );
+
+                    if not InsideTorus( P01 ) or
+                       not InsideTorus( P02 ) or
+                       not InsideTorus( P03 ) or
+                       not InsideTorus( P12 ) or
+                       not InsideTorus( P23 ) or
+                       not InsideTorus( P31 ) or
+                       not InsideTorus( Barycenter ) or
+                       not InsideTorus( CircumCenter ) then Free;
+               end;
+          end;
+     end;
 
      _DelaEdges.MakeModel;
      _VoroEdges.MakeModel;

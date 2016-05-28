@@ -3,7 +3,7 @@ object Form1: TForm1
   Top = 0
   Caption = 'Delaunay3D'
   ClientHeight = 500
-  ClientWidth = 780
+  ClientWidth = 770
   Position = ScreenCenter
   FormFactor.Width = 320
   FormFactor.Height = 480
@@ -17,7 +17,6 @@ object Form1: TForm1
     Color = claDimgray
     Margins.Left = 10.000000000000000000
     Margins.Top = 10.000000000000000000
-    Margins.Right = 10.000000000000000000
     Margins.Bottom = 10.000000000000000000
     Size.Width = 640.000000000000000000
     Size.Height = 480.000000000000000000
@@ -27,18 +26,20 @@ object Form1: TForm1
     OnMouseMove = Viewport3D1MouseMove
     OnMouseUp = Viewport3D1MouseUp
     object Dummy1: TDummy
+      RotationAngle.Y = 330.000000000000000000
       Width = 1.000000000000000000
       Height = 1.000000000000000000
       Depth = 1.000000000000000000
+      Quanternion = '(0,0.258819133043289,0,-0.965925812721252)'
       object Dummy2: TDummy
-        RotationAngle.X = 315.000000000000000000
+        RotationAngle.X = 330.000000000000000000
         Width = 1.000000000000000000
         Height = 1.000000000000000000
         Depth = 1.000000000000000000
-        Quanternion = '(0.382683485746384,0,0,-0.923879504203796)'
+        Quanternion = '(0.258819103240967,0,0,-0.965925812721252)'
         object Camera1: TCamera
           AngleOfView = 45.000000000000000000
-          Position.Z = -15.000000000000000000
+          Position.Z = -3.000000000000000000
           Width = 1.000000000000000000
           Height = 1.000000000000000000
           Depth = 1.000000000000000000
@@ -67,7 +68,7 @@ object Form1: TForm1
       Quanternion = '(0.70710676908493,0,0,-0.70710676908493)'
     end
     object LightMaterialSourceD: TLightMaterialSource
-      Diffuse = xFFD97171
+      Diffuse = xFFF86BAC
       Ambient = xFF202020
       Emissive = claNull
       Specular = claNull
@@ -78,7 +79,7 @@ object Form1: TForm1
   end
   object Panel1: TPanel
     Align = Right
-    Position.X = 660.000000000000000000
+    Position.X = 650.000000000000000000
     Size.Width = 120.000000000000000000
     Size.Height = 500.000000000000000000
     Size.PlatformDefault = False
@@ -96,7 +97,7 @@ object Form1: TForm1
     end
   end
   object LightMaterialSourceV: TLightMaterialSource
-    Diffuse = xFF8585FF
+    Diffuse = xFF41C9A9
     Ambient = xFF202020
     Emissive = claNull
     Specular = claNull
