@@ -8,7 +8,7 @@ uses
   System.Math.Vectors,
   FMX.Controls.Presentation, FMX.StdCtrls, FMX.Viewport3D, FMX.Types3D,
   FMX.MaterialSources, FMX.Objects3D, FMX.Controls3D,
-  LUX, LUX.D3, LUX.Brep.Face.TriFlip.D3,
+  LUX, LUX.FMX, LUX.D3, LUX.Brep.Face.TriFlip.D3,
   LUX.Brep.Cell.TetraFlip.D3, LUX.Brep.Cell.TetraFlip.D3.Delaunay, LUX.Brep.Cell.TetraFlip.D3.FMX;
 
 type
@@ -39,6 +39,8 @@ type
     _Delaunay3D :TDelaunay3D;
     _DelaEdges  :TDelaEdges;
     _VoroEdges  :TVoroEdges;
+    ///// ÉÅÉ\ÉbÉh
+    function IsNearShell( const P_:TSingle3D ) :Boolean;
   end;
 
 var
@@ -49,6 +51,33 @@ implementation //###############################################################
 {$R *.fmx}
 
 uses System.Math;
+
+//&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& public
+
+function TForm1.IsNearShell( const P_:TSingle3D ) :Boolean;
+var
+   I :Integer;
+begin
+     with _FaceModel do
+     begin
+          for I := 0 to ChildsN-1 do
+          begin
+               with TTriFace3D( Childs[ I ] ).CircumSphere do
+               begin
+                    if Distance( Center, P_ ) <= Radius then
+                    begin
+                         Result := True;
+
+                         Exit;
+                    end;
+               end;
+          end;
+     end;
+
+     Result := False;
+end;
+
+//&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 
 procedure TForm1.FormCreate(Sender: TObject);
 begin
@@ -67,7 +96,7 @@ begin
           Parent     := Viewport3D1;
           Material   := LightMaterialSourceD;
           TetraModel := TTetraModel3D( _Delaunay3D );
-          EdgeRadius := 0.002;
+          EdgeRadius := 0.005;
      end;
 
      with _VoroEdges do
@@ -75,8 +104,8 @@ begin
           Parent     := Viewport3D1;
           Material   := LightMaterialSourceV;
           TetraModel := TTetraModel3D( _Delaunay3D );
-          EdgeRadius := 0.002;
-          EdgeLength := 0.002;
+          EdgeRadius := 0.005;
+          EdgeLength := 0.005;
      end;
 end;
 
@@ -119,17 +148,10 @@ end;
 
 //------------------------------------------------------------------------------
 
-function InsideTorus( const P_:TSingle3D ) :Boolean;
-begin
-     Result := ( Pow2( Roo2( Pow2( P_.X ) + Pow2( P_.Y ) ) - 1 ) + Pow2( P_.Z ) < 0.25 );
-end;
-
 procedure TForm1.Button1Click(Sender: TObject);
 var
-   I :Integer;
+   N, I :Integer;
    C :TDelaCell;
-   P01, P02, P03,
-   P12, P23, P31 :TSingle3D;
 begin
      _Delaunay3D.DeleteChilds;
 
@@ -140,46 +162,38 @@ begin
 
      with _Delaunay3D do
      begin
-          for I := 1 to 10000 do
+          N := 0;
+          while N < 1000 do
           begin
                C := Childs[ Random( ChildsN ) ];
 
-               with C do
+               with C.CircumSphere do
                begin
-                    with CircumSphere do
+                    if _FaceModel.IsInside( Center ) and ( Radius > 0.1 ) and not IsNearShell( Center ) then
                     begin
-                         if InsideTorus( Center ) and ( Radius > 0.1 )
-                         then AddPoin3( TDelaPoin.Create( Center, PoinModel ), C );
-                    end;
+                         AddPoin3( TDelaPoin.Create( Center, PoinModel ), C );
+
+                         N := 0;
+                    end
+                    else Inc( N );
                end;
           end;
 
           for I := ChildsN-1 downto 0 do
           begin
-               C := Childs[ I ];
-               with C do
+               with Childs[ I ] do
                begin
-                    P01 := Ave( Poin[ 0 ].Pos, Poin[ 1 ].Pos );
-                    P02 := Ave( Poin[ 0 ].Pos, Poin[ 2 ].Pos );
-                    P03 := Ave( Poin[ 0 ].Pos, Poin[ 3 ].Pos );
-                    P12 := Ave( Poin[ 1 ].Pos, Poin[ 2 ].Pos );
-                    P23 := Ave( Poin[ 2 ].Pos, Poin[ 3 ].Pos );
-                    P31 := Ave( Poin[ 3 ].Pos, Poin[ 1 ].Pos );
-
-                    if not InsideTorus( P01 ) or
-                       not InsideTorus( P02 ) or
-                       not InsideTorus( P03 ) or
-                       not InsideTorus( P12 ) or
-                       not InsideTorus( P23 ) or
-                       not InsideTorus( P31 ) or
-                       not InsideTorus( Barycenter ) or
-                       not InsideTorus( CircumCenter ) then Free;
+                    if not _FaceModel.IsInside( Barycenter   ) or
+                       not _FaceModel.IsInside( CircumCenter ) then Free;
                end;
           end;
      end;
 
      _DelaEdges.MakeModel;
      _VoroEdges.MakeModel;
+
+     _DelaEdges.Geometry.SaveToFileBinSTL( 'Dera.stl', 'DelaEdges' );
+     _VoroEdges.Geometry.SaveToFileBinSTL( 'Voro.stl', 'VoroEdges' );
 
      Viewport3D1.Repaint;
 end;

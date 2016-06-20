@@ -327,6 +327,7 @@
         <DCCReference Include="_LIBRARY\LUXOPHIA\LUX.Brep\LUX.Brep.Face.TriFlip.D3.FMX.pas"/>
         <DCCReference Include="_LIBRARY\LUXOPHIA\LUX.Matrix\LUX.Matrix.L3.pas"/>
         <DCCReference Include="_LIBRARY\LUXOPHIA\LUX.Matrix\LUX.Matrix.L2.pas"/>
+        <DCCReference Include="_LIBRARY\LUXOPHIA\LUX\LUX.FMX.pas"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>
@@ -370,19 +371,7 @@
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
-                <DeployFile LocalName="Win64\Debug\Tetrahedralizer.rsm" Configuration="Debug" Class="DebugSymbols">
-                    <Platform Name="Win64">
-                        <RemoteName>Tetrahedralizer.rsm</RemoteName>
-                        <Overwrite>true</Overwrite>
-                    </Platform>
-                </DeployFile>
                 <DeployFile LocalName="Win64\Release\Tetrahedralizer.exe" Configuration="Release" Class="ProjectOutput">
-                    <Platform Name="Win64">
-                        <RemoteName>Tetrahedralizer.exe</RemoteName>
-                        <Overwrite>true</Overwrite>
-                    </Platform>
-                </DeployFile>
-                <DeployFile LocalName="Win64\Debug\Tetrahedralizer.exe" Configuration="Debug" Class="ProjectOutput">
                     <Platform Name="Win64">
                         <RemoteName>Tetrahedralizer.exe</RemoteName>
                         <Overwrite>true</Overwrite>
@@ -390,6 +379,12 @@
                 </DeployFile>
                 <DeployFile LocalName="$(BDS)\Redist\osx32\libcgsqlite3.dylib" Class="DependencyModule">
                     <Platform Name="OSX32">
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="Win64\Debug\Tetrahedralizer.exe" Configuration="Debug" Class="ProjectOutput">
+                    <Platform Name="Win64">
+                        <RemoteName>Tetrahedralizer.exe</RemoteName>
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
