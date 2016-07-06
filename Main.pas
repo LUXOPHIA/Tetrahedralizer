@@ -1,6 +1,6 @@
-unit Main;
+Ôªøunit Main;
 
-interface  //################################################################### Å°
+interface  //################################################################### ‚ñ†
 
 uses
   System.SysUtils, System.Types, System.UITypes, System.Classes, System.Variants,
@@ -30,23 +30,23 @@ type
     procedure Viewport3D1MouseMove(Sender: TObject; Shift: TShiftState; X, Y: Single);
     procedure Viewport3D1MouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Single);
   private
-    { private êÈåæ }
+    { private ÂÆ£Ë®Ä }
     _MouseP :TPointF;
     _MouseS :TShiftState;
   public
-    { public êÈåæ }
+    { public ÂÆ£Ë®Ä }
     _FaceModel  :TTriFaceModel3D;
     _Delaunay3D :TDelaunay3D;
     _DelaEdges  :TDelaEdges;
     _VoroEdges  :TVoroEdges;
-    ///// ÉÅÉ\ÉbÉh
+    ///// „É°„ÇΩ„ÉÉ„Éâ
     function IsNearShell( const P_:TSingle3D ) :Boolean;
   end;
 
 var
   Form1: TForm1;
 
-implementation //############################################################### Å°
+implementation //############################################################### ‚ñ†
 
 {$R *.fmx}
 
@@ -163,19 +163,22 @@ begin
      with _Delaunay3D do
      begin
           N := 0;
-          while N < 1000 do
+          while N < 100 do
           begin
                C := Childs[ Random( ChildsN ) ];
 
-               with C.CircumSphere do
+               if C.Open < 0 then
                begin
-                    if _FaceModel.IsInside( Center ) and ( Radius > 0.1 ) and not IsNearShell( Center ) then
+                    with C.CircumSphere do
                     begin
-                         AddPoin3( TDelaPoin.Create( Center, PoinModel ), C );
+                         if _FaceModel.IsInside( Center ) and ( Radius > 0.1 ) and not IsNearShell( Center ) then
+                         begin
+                              AddPoin3( TDelaPoin.Create( Center, PoinModel ), C );
 
-                         N := 0;
-                    end
-                    else Inc( N );
+                              N := 0;
+                         end
+                         else Inc( N );
+                    end;
                end;
           end;
 
@@ -183,10 +186,11 @@ begin
           begin
                with Childs[ I ] do
                begin
-                    if not _FaceModel.IsInside( Barycenter   ) or
-                       not _FaceModel.IsInside( CircumCenter ) then Free;
+                    if ( Open >= 0 ) or not _FaceModel.IsInside( Barycenter ) then Free;
                end;
           end;
+
+          SaveToFile( 'Model.tetf' );
      end;
 
      _DelaEdges.MakeModel;
@@ -198,4 +202,4 @@ begin
      Viewport3D1.Repaint;
 end;
 
-end. //######################################################################### Å°
+end. //######################################################################### ‚ñ†
