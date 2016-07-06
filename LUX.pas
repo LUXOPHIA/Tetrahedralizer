@@ -2,7 +2,7 @@
 
 interface //#################################################################### ■
 
-uses System.SysUtils, System.UITypes, System.Math.Vectors,
+uses System.Classes, System.SysUtils, System.UITypes, System.Math.Vectors,
      FMX.Graphics, FMX.Types3D, FMX.Controls3D, FMX.Objects3D;
 
 type //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$【型】
@@ -171,6 +171,23 @@ type //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
        property Value :TValue_ read GetValue write SetValue;
      end;
 
+     //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% TFileReader
+
+     TFileReader = class( TBinaryReader )
+     private
+     protected
+       _Encoding  :TEncoding;
+       _OffsetBOM :Integer;
+     public
+       constructor Create( Stream_:TStream; Encoding_:TEncoding = nil; OwnsStream_:Boolean = False ); overload;
+       constructor Create( const Filename_:String; Encoding_:TEncoding = nil ); overload;
+       ///// プロパティ
+       property OffsetBOM :Integer read _OffsetBOM;
+       ///// メソッド
+       function EndOfStream :Boolean;
+       function ReadLine :String;
+     end;
+
 const //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$【定数】
 
       Pi2 = 2 * Pi;
@@ -228,6 +245,14 @@ function Max( const A_,B_,C_:Integer ) :Integer; overload;
 function Max( const A_,B_,C_:Single ) :Single; overload;
 function Max( const A_,B_,C_:Double ) :Double; overload;
 
+function MinI( const A_,B_:Integer ) :Byte; inline; overload;
+function MinI( const A_,B_:Single ) :Byte; inline; overload;
+function MinI( const A_,B_:Double ) :Byte; inline; overload;
+
+function MaxI( const A_,B_:Integer ) :Byte; inline; overload;
+function MaxI( const A_,B_:Single ) :Byte; inline; overload;
+function MaxI( const A_,B_:Double ) :Byte; inline; overload;
+
 function MinI( const A_,B_,C_:Integer ) :Integer; inline; overload;
 function MinI( const A_,B_,C_:Single ) :Integer; inline; overload;
 function MinI( const A_,B_,C_:Double ) :Integer; inline; overload;
@@ -251,7 +276,7 @@ function FileToBytes( const FileName_:string ) :TBytes;
 
 implementation //############################################################### ■
 
-uses System.Classes, System.Math,
+uses System.Math,
      FMX.Types;
 
 //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$【レコード】
@@ -558,6 +583,68 @@ end;
 
 //&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& public
 
+//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% TIter< TValue_ >
+
+//&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& private
+
+//&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& protected
+
+//&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& public
+
+//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% TFileReader
+
+//&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& private
+
+//&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& protected
+
+//&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& public
+
+constructor TFileReader.Create( Stream_:TStream; Encoding_:TEncoding = nil; OwnsStream_:Boolean = False );
+begin
+     inherited Create( Stream_, TEncoding.ANSI, OwnsStream_ );
+
+     _OffsetBOM := TEncoding.GetBufferEncoding( ReadBytes( 8 ), _Encoding, Encoding_ );
+
+     BaseStream.Position := _OffsetBOM;
+end;
+
+constructor TFileReader.Create( const Filename_:String; Encoding_:TEncoding = nil );
+begin
+     Create( TFileStream.Create( Filename_, fmOpenRead or fmShareDenyWrite ), Encoding_, True );
+end;
+
+/////////////////////////////////////////////////////////////////////// メソッド
+
+function TFileReader.EndOfStream :Boolean;
+begin
+     Result := ( PeekChar = -1 );
+end;
+
+function TFileReader.ReadLine :String;
+var
+   Bs :TBytes;
+   B :Byte;
+begin
+     Bs := [];
+
+     while not EndOfStream do
+     begin
+          B := ReadByte;
+
+          case B of
+           10: Break;
+           13: begin
+                    if PeekChar = 10 then ReadByte;
+
+                    Break;
+               end;
+          else Bs := Bs + [ B ];
+          end;
+     end;
+
+     Result := _Encoding.GetString( Bs );
+end;
+
 //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$【ルーチン】
 
 {$IF SizeOf( Extended ) = 10 }
@@ -624,7 +711,7 @@ end;
 
 {$ENDIF}
 
-////////////////////////////////////////////////////////////////////////////////
+//------------------------------------------------------------------------------
 
 function Pow2( const X_:Integer ) :Integer;
 begin
@@ -641,7 +728,7 @@ begin
      Result := Sqr( X_ );
 end;
 
-////////////////////////////////////////////////////////////////////////////////
+//------------------------------------------------------------------------------
 
 function Pow3( const X_:Integer ) :Integer;
 begin
@@ -658,7 +745,7 @@ begin
      Result := X_ * Pow2( X_ );
 end;
 
-////////////////////////////////////////////////////////////////////////////////
+//------------------------------------------------------------------------------
 
 function Roo2( const X_:Single ) :Single;
 begin
@@ -670,7 +757,7 @@ begin
      Result := Sqrt( X_ );
 end;
 
-////////////////////////////////////////////////////////////////////////////////
+//------------------------------------------------------------------------------
 
 function Roo3( const X_:Single ) :Single;
 begin
@@ -682,7 +769,7 @@ begin
      Result := Power( X_, 1/3 );
 end;
 
-////////////////////////////////////////////////////////////////////////////////
+//------------------------------------------------------------------------------
 
 function ClipRange( const X_,Min_,Max_:Integer ) :Integer;
 begin
@@ -708,7 +795,7 @@ begin
                   else Result := X_;
 end;
 
-////////////////////////////////////////////////////////////////////////////////
+//------------------------------------------------------------------------------
 
 function Min( const A_,B_,C_:Integer ) :Integer;
 begin
@@ -752,7 +839,7 @@ begin
      end;
 end;
 
-////////////////////////////////////////////////////////////////////////////////
+//------------------------------------------------------------------------------
 
 function Max( const A_,B_,C_:Integer ) :Integer;
 begin
@@ -799,7 +886,47 @@ begin
      end;
 end;
 
-////////////////////////////////////////////////////////////////////////////////
+//------------------------------------------------------------------------------
+
+function MinI( const A_,B_:Integer ) :Byte;
+begin
+     if A_ <= B_ then Result := 1
+                 else Result := 2;
+end;
+
+function MinI( const A_,B_:Single ) :Byte;
+begin
+     if A_ <= B_ then Result := 1
+                 else Result := 2;
+end;
+
+function MinI( const A_,B_:Double ) :Byte;
+begin
+     if A_ <= B_ then Result := 1
+                 else Result := 2;
+end;
+
+//------------------------------------------------------------------------------
+
+function MaxI( const A_,B_:Integer ) :Byte;
+begin
+     if A_ <= B_ then Result := 2
+                 else Result := 1;
+end;
+
+function MaxI( const A_,B_:Single ) :Byte;
+begin
+     if A_ <= B_ then Result := 2
+                 else Result := 1;
+end;
+
+function MaxI( const A_,B_:Double ) :Byte;
+begin
+     if A_ <= B_ then Result := 2
+                 else Result := 1;
+end;
+
+//------------------------------------------------------------------------------
 
 function MinI( const A_,B_,C_:Integer ) :Integer;
 begin
@@ -843,7 +970,7 @@ begin
      end;
 end;
 
-////////////////////////////////////////////////////////////////////////////////
+//------------------------------------------------------------------------------
 
 function MaxI( const A_,B_,C_:Integer ) :Integer;
 begin
@@ -887,7 +1014,7 @@ begin
      end;
 end;
 
-////////////////////////////////////////////////////////////////////////////////
+//------------------------------------------------------------------------------
 
 function MinI( const Vs_:array of Integer ) :Integer;
 var
@@ -942,7 +1069,7 @@ begin
      end
 end;
 
-////////////////////////////////////////////////////////////////////////////////
+//------------------------------------------------------------------------------
 
 function MaxI( const Vs_:array of Integer ) :Integer;
 var
@@ -997,7 +1124,7 @@ begin
      end
 end;
 
-////////////////////////////////////////////////////////////////////////////////
+//------------------------------------------------------------------------------
 
 function RealMod( const X_,Range_:Integer ) :Integer;
 begin
@@ -1009,7 +1136,7 @@ begin
      Result := X_ mod Range_;  if Result < 0 then Inc( Result, Range_ );
 end;
 
-////////////////////////////////////////////////////////////////////////////////
+//------------------------------------------------------------------------------
 
 function FileToBytes( const FileName_:string ) :TBytes;
 begin
